@@ -1,90 +1,89 @@
-$(document).ready(function(){
-    let gameInterval;
-    let isGameOver = false;
+$(document).ready(function() {
+    var car = $(".car");
+    var obstacle = $(".obstacle");
+    var container = $(".container");
 
-    function createObstacle() {
-        if (isGameOver) return;
+    var carSpeed = 20;
+    var obstacleSpeed = 2;
+    var isGameOver = false;
 
-        const obstacle = document.createElement('div');
-        obstacle.className = 'obstacle';
-        obstacle.style.left = Math.random() * 370 + 'px'; // Random horizontal position
-        $('.container').append(obstacle);
-
-        // Animate obstacle falling
-        $(obstacle).animate({
-            top: '100%',
-        }, 3000, 'linear', function() {
-            $(this).remove(); // Remove obstacle when it reaches the bottom
-        });
-
-        // Check for collision
-        const carLeft = parseInt($(".car").css("left"));
-        const carTop = parseInt($(".car").css("top"));  // Change this to "top"
-        const obstacleLeft = parseInt($(".obstacle").css("left"));
-        const obstacleTop = parseInt($(".obstacle").css("top"));
-        const obstacleBottom = parseInt($(".obstacle").css("bottom"));
-        const obstacleRight = parseInt($(".obstacle").css("right"));
-        const carBottom = parseInt($(".car").css("bottom"));
-        const carRight = parseInt($(".car").css("right"));
-console.log(carTop,obstacleBottom,"hits")
-        let vertialMatch, horizontalMatch, intersect
-        if ((obstacleTop > carTop && obstacleTop < carBottom) || (carBottom > obstacleTop && carBottom < obstacleBottom)) {
-            verticalMatch = true
-        } else {
-            verticalMatch = false
+    // Move the car left or right
+    $(document).on("keydown", function(e) {
+        if (e.key === "ArrowLeft" && !isGameOver) {
+            var leftPosition = parseInt(car.css("left"));
+            if (leftPosition > 50) {
+                car.css("left", leftPosition - carSpeed);
+            }
         }
-
-        if ((carRight > obstacleLeft && carRight < obstacleRight) || (carLeft < obstacleRight && carLeft > obstacleLeft)) {
-            horizontalMatch = true
-        } else {
-            horizontalMatch = false
+        if (e.key === "ArrowRight" && !isGameOver) {
+            var leftPosition = parseInt(car.css("left"));
+            if (leftPosition < 400-70) {
+                car.css("left", leftPosition + carSpeed);
+            }
         }
-
-        if (horizontalMatch && vertialMatch) {
-            console.log('Game over - Obstacle touched car');
-            intersect = true
-            endGame();
-        } else {
-            intersect = false
-        }
-  
-        if (
-            carLeft < obstacleLeft + 30 &&
-            carLeft + 80 > obstacleLeft &&
-            carTop < obstacleTop + 30 &&
-            carTop + 80 > obstacleTop
-        ) {
-            endGame();
-            console.log('Game over - Obstacle touched car');
-        }
-    }
-
-    function endGame() {
-        isGameOver = true;
-        clearInterval(gameInterval);
-        $('.obstacle').remove();
-        alert("Game Over! You hit an obstacle.");
-    }
-
-    // Generate obstacles at intervals
-    gameInterval = setInterval(createObstacle, 2000);
-
-    $(document).keydown(function(e) {
-        if (isGameOver) return;
-
-        switch(e.which) {
-            case 37:
-                console.log('Moving left');
-                $(".car").css("left", Math.max(0, parseInt($(".car").css("left")) - 20) + "px");
-                break;
-
-            case 39:
-                console.log('Moving right');
-                $(".car").css("left", Math.min(400 - 80, parseInt($(".car").css("left")) + 20) + "px");
-                break;
-
-            default: return;
-        }
-        e.preventDefault();
     });
+
+    // Move the obstacle
+    function moveObstacle() {
+        var topPosition = parseInt(obstacle.css("top"));
+        obstacle.css("top", topPosition + obstacleSpeed);
+
+        if (topPosition > container.height()) {
+            resetObstacle();
+        }
+
+        if (!isGameOver) {
+            requestAnimationFrame(moveObstacle);
+        }
+    }
+
+    // Reset obstacle position
+    function resetObstacle() {
+        obstacle.css({
+            top: -obstacle.height(),
+            left: Math.random() * (container.width() - obstacle.width())
+        });
+    }
+
+    // Collision detection
+    function checkCollision() {
+        var carRect = car[0].getBoundingClientRect();
+        var obstacleRect = obstacle[0].getBoundingClientRect();
+
+        if (
+            carRect.left < obstacleRect.right &&
+            carRect.right > obstacleRect.left &&
+            carRect.top < obstacleRect.bottom &&
+            carRect.bottom > obstacleRect.top
+        ) {
+            gameOver();
+        }
+
+        if (!isGameOver) {
+            requestAnimationFrame(checkCollision);
+        }
+    }
+
+    // Game over
+    function gameOver() {
+        isGameOver = true;
+        alert("Game Over");
+
+        // Reset car position
+        car.css("left", container.width() / 2 - car.width() / 2);
+
+        // Reset obstacle position
+        resetObstacle();
+
+        // Restart the game
+        setTimeout(function() {
+            isGameOver = false;
+            moveObstacle();
+            checkCollision();
+        }, 2000); // Restart after a 2-second delay
+    }
+
+    // Start the game
+    moveObstacle();
+    checkCollision();
 });
